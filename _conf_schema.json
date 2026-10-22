@@ -1,0 +1,80 @@
+{
+  "enabled": {
+    "description": "启用思考泄露拦截",
+    "type": "bool",
+    "default": true
+  },
+  "jev_base_url": {
+    "description": "决策模型 Base URL",
+    "type": "string",
+    "hint": "Jev 类决策模型服务地址，例如 https://api.typesafe.ai",
+    "default": "https://api.typesafe.ai"
+  },
+  "jev_endpoint": {
+    "description": "决策接口路径",
+    "type": "string",
+    "default": "/v1/systemone"
+  },
+  "jev_api_key": {
+    "description": "决策模型 API Key",
+    "type": "string",
+    "obvious_hint": true,
+    "hint": "以 Authorization: Bearer 方式发送",
+    "default": ""
+  },
+  "jev_model": {
+    "description": "决策模型名称",
+    "type": "string",
+    "default": "jev-latest"
+  },
+  "jev_timeout": {
+    "description": "决策请求超时（秒）",
+    "type": "float",
+    "default": 15
+  },
+  "detect_instructions": {
+    "description": "判定指令（noul 问题）",
+    "type": "text",
+    "default": "This is a chatbot reply that is about to be sent to a user. Does it leak the model's internal reasoning, chain-of-thought, planning, self-talk, analysis of the system prompt or instructions, or meta commentary about how it will answer (for example <think> blocks, 'Let me think', '用户想要…', '我需要…', '根据设定…'), instead of only containing the final answer meant for the user?"
+  },
+  "threshold": {
+    "description": "判定阈值",
+    "type": "float",
+    "hint": "决策模型返回概率 ≥ 该值时视为泄露",
+    "default": 0.5
+  },
+  "max_check_chars": {
+    "description": "送检最大字符数",
+    "type": "int",
+    "default": 6000
+  },
+  "min_chars": {
+    "description": "最短送检字符数",
+    "type": "int",
+    "hint": "短于该长度的回复直接放行",
+    "default": 1
+  },
+  "only_llm_result": {
+    "description": "仅检查 LLM 生成的回复",
+    "type": "bool",
+    "default": true
+  },
+  "cleaner_provider_id": {
+    "description": "清理模型",
+    "type": "string",
+    "_special": "select_provider",
+    "hint": "用于删去思考内容的模型；留空则使用当前会话的聊天模型",
+    "default": ""
+  },
+  "cleaner_system_prompt": {
+    "description": "清理模型系统提示词",
+    "type": "text",
+    "default": "你是一个文本清理器。用户会给出一段包裹在 <reply> 标签中的聊天机器人回复，其中混入了模型的思考过程、推理、计划、自言自语或对设定/指令的分析。请删除所有这类内容，只保留原本要发给用户的最终回复。不要改写、润色、翻译或补充保留部分，保持原有语气、格式和语言。只输出清理后的回复正文，不要输出标签或任何解释。"
+  },
+  "fallback_message": {
+    "description": "清理失败时的替代文本",
+    "type": "string",
+    "hint": "清理模型调用失败时发送此文本；留空则丢弃原回复中的文字部分",
+    "default": ""
+  }
+}

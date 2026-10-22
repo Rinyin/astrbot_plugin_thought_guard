@@ -1,0 +1,7 @@
+name: astrbot_plugin_thought_guard
+display_name: 思考泄露拦截
+desc: 发送前用 Jev 类决策模型检测回复是否泄露思考内容，若泄露则交由指定模型清理后再发送。
+version: v0.1.0
+author: Rinyin
+license: AGPL-3.0
+repo: "https://github.com/Rinyin/astrbot_plugin_thought_guard"
