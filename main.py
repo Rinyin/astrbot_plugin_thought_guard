@@ -1,9 +1,13 @@
 import re
 
-import aiohttp
 from astrbot.api import AstrBotConfig, logger
 from astrbot.api.event import AstrMessageEvent, filter
 from astrbot.api.message_components import Plain
+from astrbot.api.provider import (
+    DecisionBooleanAnswer,
+    DecisionBooleanQuestion,
+    DecisionError,
+)
 from astrbot.api.star import Context, Star
 from astrbot.core.message.message_event_result import ResultContentType
 
@@ -15,50 +19,23 @@ class ThoughtGuard(Star):
     def __init__(self, context: Context, config: AstrBotConfig):
         super().__init__(context)
         self.config = config
-        self._session: aiohttp.ClientSession | None = None
-
-    def _get_session(self) -> aiohttp.ClientSession:
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
-        return self._session
 
     async def _detect(self, text: str) -> float | None:
-        """调用 Jev 类决策模型，返回“泄露思考内容”的概率；失败返回 None。"""
+        """调用 AstrBot 默认决策模型，返回泄露概率；失败返回 None。"""
         cfg = self.config
-        api_key = cfg.get("jev_api_key", "")
-        base_url = cfg.get("jev_base_url", "").rstrip("/")
-        if not api_key or not base_url:
-            logger.warning(
-                "[thought_guard] 未配置决策模型 base_url 或 api_key，跳过检测"
-            )
-            return None
-        url = base_url + "/" + cfg.get("jev_endpoint", "/v1/systemone").lstrip("/")
-        payload = {
-            "model": cfg.get("jev_model", "jev-latest"),
-            "state": text[: int(cfg.get("max_check_chars", 6000))],
-            "questions": {
-                QUESTION_KEY: {
-                    "type": "noul",
-                    "instructions": cfg.get("detect_instructions", ""),
-                }
-            },
-        }
-        headers = {"Authorization": f"Bearer {api_key}"}
-        timeout = aiohttp.ClientTimeout(total=float(cfg.get("jev_timeout", 15)))
         try:
-            async with self._get_session().post(
-                url, json=payload, headers=headers, timeout=timeout
-            ) as resp:
-                if resp.status != 200:
-                    body = (await resp.text())[:300]
-                    logger.warning(
-                        f"[thought_guard] 决策模型返回 {resp.status}: {body}"
+            answers = await self.context.decision.ask(
+                {
+                    QUESTION_KEY: DecisionBooleanQuestion(
+                        instructions=cfg.get("detect_instructions", "")
                     )
-                    return None
-                data = await resp.json(content_type=None)
-            answer = (data.get("answers") or data)[QUESTION_KEY]
-            value = answer.get("noul") if isinstance(answer, dict) else answer
-            return float(value)
+                },
+                state=text[: int(cfg.get("max_check_chars", 6000))],
+            )
+            answer = answers[QUESTION_KEY]
+            if not isinstance(answer, DecisionBooleanAnswer):
+                raise DecisionError("Decision provider returned no boolean answer")
+            return answer.probability
         except Exception as e:
             logger.warning(f"[thought_guard] 决策模型调用失败: {type(e).__name__}: {e}")
             return None
@@ -115,7 +92,3 @@ class ThoughtGuard(Star):
             else:
                 new_chain.append(comp)
         result.chain = new_chain
-
-    async def terminate(self):
-        if self._session and not self._session.closed:
-            await self._session.close()

@@ -1,43 +1,31 @@
 # astrbot_plugin_thought_guard
 
-在 AstrBot 发送消息前，使用 [Jev](https://typesafe.ai) 类决策模型检测回复是否泄露了思考内容（思维链、自言自语、对设定的分析等）：
+在 AstrBot 发送消息前，使用 AstrBot 已配置的默认决策模型检测回复是否泄露了思考内容（思维链、自言自语、对设定的分析等）：
 
 - 未泄露：直接放行；
 - 泄露：截断原回复，交由配置中指定的模型删去思考内容后再发送。
 
-决策模型使用独立的 HTTP 协议（非 OpenAI 兼容），AstrBot 内无法直接添加，因此其 Base URL 与 Key 在插件配置中填写。
+通过 AstrBot 4.29.4 新增的决策服务调用模型，连接参数、凭据、超时和连接生命周期由 AstrBot 管理，插件不再提供独立的决策模型配置。
 
 ## 安装
 
-将本仓库放入 `data/plugins/astrbot_plugin_thought_guard/`，或在 AstrBot WebUI 中通过仓库地址安装，然后重载插件。依赖：`aiohttp`（AstrBot 已自带）。
+要求 AstrBot **4.29.4 或更高版本**。将本仓库放入 `data/plugins/astrbot_plugin_thought_guard/`，或在 AstrBot WebUI 中通过仓库地址安装，然后重载插件。无需额外安装第三方依赖。
 
 ## 配置
 
-在 WebUI 插件配置中设置，主要项如下（示例已脱敏）：
+先在 AstrBot WebUI 模型服务的“判断”页添加并启用决策模型。插件跟随核心当前的全局默认决策模型；核心未设置默认时使用第一个可用实例。4.29.4 的 WebUI 暂无单独选择默认决策模型的入口。
+
+从 v0.1.0 升级时，请先将原插件中的决策服务连接参数迁移到 AstrBot 的决策模型服务。旧的 `jev_base_url`、`jev_endpoint`、`jev_api_key`、`jev_model`、`jev_timeout` 不再读取，重载插件时由 AstrBot 按新配置结构移除。插件不会自动复制凭据或创建服务商。
+
+在 WebUI 插件配置中调整检测和清理行为，主要项如下：
 
 | 配置项 | 说明 | 示例 |
 | --- | --- | --- |
-| `jev_base_url` | 决策模型服务地址 | `https://api.typesafe.ai` |
-| `jev_endpoint` | 决策接口路径 | `/v1/systemone` |
-| `jev_api_key` | 决策模型 Key（Bearer） | `sk-xxxx` |
-| `jev_model` | 决策模型名称 | `jev-latest` |
+| `detect_instructions` | 判断是否泄露思考内容的指令 | 使用默认值 |
 | `threshold` | 概率 ≥ 该值视为泄露 | `0.5` |
+| `max_check_chars` | 送检最大字符数 | `6000` |
 | `cleaner_provider_id` | 清理思考内容所用模型，留空为当前会话模型 | — |
 | `fallback_message` | 清理失败时发送的文本，留空则丢弃文字部分 | — |
-
-插件向决策接口发送如下请求，并读取 `answers.leaks_reasoning.noul`（或顶层 `leaks_reasoning.noul`）作为泄露概率：
-
-```json
-{
-  "model": "jev-latest",
-  "state": "<待发送的回复文本>",
-  "questions": {
-    "leaks_reasoning": { "type": "noul", "instructions": "<判定指令>" }
-  }
-}
-```
-
-兼容同一请求/响应格式的其他决策服务也可使用。
 
 ## 已知限制
 

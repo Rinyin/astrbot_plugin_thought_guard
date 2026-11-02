@@ -4,36 +4,8 @@
     "type": "bool",
     "default": true
   },
-  "jev_base_url": {
-    "description": "决策模型 Base URL",
-    "type": "string",
-    "hint": "Jev 类决策模型服务地址，例如 https://api.typesafe.ai",
-    "default": "https://api.typesafe.ai"
-  },
-  "jev_endpoint": {
-    "description": "决策接口路径",
-    "type": "string",
-    "default": "/v1/systemone"
-  },
-  "jev_api_key": {
-    "description": "决策模型 API Key",
-    "type": "string",
-    "obvious_hint": true,
-    "hint": "以 Authorization: Bearer 方式发送",
-    "default": ""
-  },
-  "jev_model": {
-    "description": "决策模型名称",
-    "type": "string",
-    "default": "jev-latest"
-  },
-  "jev_timeout": {
-    "description": "决策请求超时（秒）",
-    "type": "float",
-    "default": 15
-  },
   "detect_instructions": {
-    "description": "判定指令（noul 问题）",
+    "description": "思考泄露判定指令",
     "type": "text",
     "default": "This is a chatbot reply that is about to be sent to a user. Does it leak the model's internal reasoning, chain-of-thought, planning, self-talk, analysis of the system prompt or instructions, or meta commentary about how it will answer (for example <think> blocks, 'Let me think', '用户想要…', '我需要…', '根据设定…'), instead of only containing the final answer meant for the user?"
   },
